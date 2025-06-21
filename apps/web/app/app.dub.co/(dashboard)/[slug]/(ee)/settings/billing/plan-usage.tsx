@@ -59,7 +59,9 @@ export default function PlanUsage() {
     status: "approved",
   });
 
-  const payoutFees = plan ? PAYOUT_FEES[plan.toLowerCase()]?.ach : null;
+  const payoutFees = plan
+    ? PAYOUT_FEES[plan.toLowerCase()]?.direct_debit
+    : null;
 
   const { data: tags } = useTagsCount();
   const { users } = useUsers();
@@ -197,18 +199,14 @@ export default function PlanUsage() {
             href={`/${slug}/settings/people`}
           />
         </div>
-        {partnersEnabled && (
+        {partnersEnabled && defaultProgramId && (
           <div className="grid grid-cols-1 gap-[1px] overflow-hidden rounded-b-lg bg-neutral-200 md:grid-cols-3">
             <UsageCategory
               title="Partners"
               icon={Users6}
               usage={partnersCount}
               usageLimit={INFINITY_NUMBER}
-              href={
-                defaultProgramId
-                  ? `/${slug}/programs/${defaultProgramId}/partners`
-                  : undefined
-              }
+              href={`/${slug}/program/partners`}
             />
             <UsageCategory
               title="Partner payouts"
@@ -216,11 +214,7 @@ export default function PlanUsage() {
               usage={payoutsUsage}
               usageLimit={payoutsLimit}
               unit="$"
-              href={
-                defaultProgramId
-                  ? `/${slug}/programs/${defaultProgramId}/payouts`
-                  : undefined
-              }
+              href={`/${slug}/program/payouts`}
             />
             <UsageCategory
               title="Payout fees"
