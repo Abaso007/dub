@@ -10,8 +10,7 @@ import {
   useScrollProgress,
 } from "@dub/ui";
 import { Check2, Gear, Plus, UserPlus } from "@dub/ui/icons";
-import { cn, OG_AVATAR_URL } from "@dub/utils";
-import { ChevronsUpDown } from "lucide-react";
+import { cn } from "@dub/utils";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
@@ -47,7 +46,8 @@ export function WorkspaceDropdown() {
       return {
         ...selectedWorkspace,
         image:
-          selectedWorkspace.logo || `${OG_AVATAR_URL}${selectedWorkspace.name}`,
+          selectedWorkspace.logo ||
+          `https://avatar.vercel.sh/${selectedWorkspace.id}`,
       };
 
       // return personal account selector if there's no workspace or error (user doesn't have access to workspace)
@@ -83,6 +83,7 @@ export function WorkspaceDropdown() {
             setOpenPopover={setOpenPopover}
           />
         }
+        side="right"
         align="start"
         openPopover={openPopover}
         setOpenPopover={setOpenPopover}
@@ -90,38 +91,19 @@ export function WorkspaceDropdown() {
         <button
           onClick={() => setOpenPopover(!openPopover)}
           className={cn(
-            "flex w-full items-center justify-between rounded-lg p-1.5 text-left text-sm transition-all duration-75 hover:bg-neutral-200/50 active:bg-neutral-200/80 data-[state=open]:bg-neutral-200/80",
+            "flex size-11 items-center justify-center rounded-lg p-1.5 text-left text-sm transition-all duration-75",
+            "hover:bg-bg-inverted/5 active:bg-bg-inverted/10 data-[state=open]:bg-bg-inverted/10",
             "outline-none focus-visible:ring-2 focus-visible:ring-black/50",
           )}
         >
-          <div className="flex min-w-0 items-center gap-x-2.5 pr-2">
-            <BlurImage
-              src={selected.image}
-              referrerPolicy="no-referrer"
-              width={28}
-              height={28}
-              alt={selected.id || selected.name}
-              className="h-7 w-7 flex-none shrink-0 overflow-hidden rounded-full"
-            />
-            <div className={cn(key ? "hidden" : "block", "min-w-0 sm:block")}>
-              <div className="truncate text-sm font-medium leading-5 text-neutral-900">
-                {selected.name}
-              </div>
-              {selected.slug !== "/" && (
-                <div
-                  className={cn(
-                    "truncate text-xs capitalize leading-tight",
-                    getPlanColor(selected.plan),
-                  )}
-                >
-                  {selected.plan}
-                </div>
-              )}
-            </div>
-          </div>
-          <ChevronsUpDown
-            className="size-4 shrink-0 text-neutral-400"
-            aria-hidden="true"
+          <BlurImage
+            src={selected.image}
+            referrerPolicy="no-referrer"
+            width={28}
+            height={28}
+            alt={selected.id || selected.name}
+            className="size-7 flex-none shrink-0 overflow-hidden rounded-full"
+            draggable={false}
           />
         </button>
       </Popover>
@@ -131,11 +113,7 @@ export function WorkspaceDropdown() {
 
 function WorkspaceDropdownPlaceholder() {
   return (
-    <div className="flex w-full animate-pulse items-center gap-x-1.5 rounded-lg p-1.5">
-      <div className="size-7 animate-pulse rounded-full bg-neutral-200" />
-      <div className="mb-px mt-0.5 h-8 w-28 grow animate-pulse rounded-md bg-neutral-200" />
-      <ChevronsUpDown className="h-4 w-4 text-neutral-400" aria-hidden="true" />
-    </div>
+    <div className="flex size-11 animate-pulse items-center gap-x-1.5 rounded-lg bg-neutral-300" />
   );
 }
 
@@ -168,12 +146,9 @@ function WorkspaceList({
       if (link) {
         // if we're on a link page, navigate back to the workspace root
         return `/${slug}/links`;
-      } else if (programId) {
-        // if we're on a program page, navigate to the program page
-        return `/${slug}/programs`;
       } else {
         // else, we keep the path but remove all query params
-        return pathname?.replace(selected.slug, slug).split("?")[0] || "/";
+        return pathname.replace(selected.slug, slug).split("?")[0] || "/";
       }
     },
     [link, programId, pathname, selected.slug],
@@ -190,11 +165,12 @@ function WorkspaceList({
         <div className="border-b border-neutral-200 p-2">
           <div className="flex items-center gap-x-2.5 rounded-md p-2">
             <BlurImage
-              src={selected.image || `${OG_AVATAR_URL}${selected.name}`}
+              src={selected.image}
               width={28}
               height={28}
               alt={selected.name}
               className="size-8 shrink-0 overflow-hidden rounded-full"
+              draggable={false}
             />
             <div className="min-w-0">
               <div className="truncate text-sm font-medium leading-5 text-neutral-900">
@@ -254,11 +230,12 @@ function WorkspaceList({
                   onClick={() => setOpenPopover(false)}
                 >
                   <BlurImage
-                    src={logo || `${OG_AVATAR_URL}${name}`}
+                    src={logo || `https://avatar.vercel.sh/${id}`}
                     width={28}
                     height={28}
                     alt={id}
                     className="size-6 shrink-0 overflow-hidden rounded-full"
+                    draggable={false}
                   />
                   <span className="block truncate text-sm leading-5 text-neutral-900 sm:max-w-[140px]">
                     {name}

@@ -1,9 +1,10 @@
 import { sendEmail } from "@dub/email";
-import { CampaignImported } from "@dub/email/templates/campaign-imported";
+import CampaignImported from "@dub/email/templates/campaign-imported";
 import { prisma } from "@dub/prisma";
 import { nanoid } from "@dub/utils";
 import { CommissionStatus, Program } from "@prisma/client";
 import { createId } from "../api/create-id";
+import { syncTotalCommissions } from "../api/partners/sync-total-commissions";
 import { getLeadEvent } from "../tinybird";
 import { recordSaleWithTimestamp } from "../tinybird/record-sale";
 import { clickEventSchemaTB } from "../zod/schemas/clicks";
@@ -53,8 +54,6 @@ export async function importCommissions({
         }),
       ),
     );
-
-    await new Promise((resolve) => setTimeout(resolve, 2000));
     currentPage++;
     processedBatches++;
   }
@@ -128,9 +127,9 @@ async function createCommission({
 
   const commissionFound = await prisma.commission.findUnique({
     where: {
-      programId_invoiceId: {
-        programId: program.id,
+      invoiceId_programId: {
         invoiceId: sale.id,
+        programId: program.id,
       },
     },
   });
@@ -268,4 +267,9 @@ async function createCommission({
       },
     }),
   ]);
+
+  await syncTotalCommissions({
+    partnerId: customerFound.link.partnerId,
+    programId: program.id,
+  });
 }
