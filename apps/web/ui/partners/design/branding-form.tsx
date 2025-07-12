@@ -19,12 +19,15 @@ import { cn } from "@dub/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { useAction } from "next-safe-action/hooks";
-import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import { toast } from "sonner";
 import { KeyedMutator } from "swr";
 import { z } from "zod";
+import {
+  BrandingContextProvider,
+  useBrandingContext,
+} from "./branding-context-provider";
 import { BrandingSettingsForm } from "./branding-settings-form";
 import { EmbedPreview } from "./previews/embed-preview";
 import { LanderPreview } from "./previews/lander-preview";
@@ -39,9 +42,12 @@ export function useBrandingFormContext() {
 }
 
 export function BrandingForm() {
-  const { programId } = useParams();
-
-  const { program, mutate, loading } = useProgram<ProgramWithLanderDataProps>(
+  const { defaultProgramId } = useWorkspace();
+  const {
+    program,
+    mutate: mutateProgram,
+    loading,
+  } = useProgram<ProgramWithLanderDataProps>(
     {
       query: { includeLanderData: true },
     },
@@ -51,7 +57,7 @@ export function BrandingForm() {
   );
 
   const [draft, setDraft] = useLocalStorage<BrandingFormData | null>(
-    `program-lander-${programId}`,
+    `program-lander-${defaultProgramId}`,
     null,
   );
 
@@ -63,12 +69,14 @@ export function BrandingForm() {
     );
 
   return (
-    <BrandingFormInner
-      program={program}
-      mutate={mutate}
-      draft={draft}
-      setDraft={setDraft}
-    />
+    <BrandingContextProvider>
+      <BrandingFormInner
+        program={program}
+        mutateProgram={mutateProgram}
+        draft={draft}
+        setDraft={setDraft}
+      />
+    </BrandingContextProvider>
   );
 }
 
@@ -92,12 +100,12 @@ const PREVIEW_TABS = [
 
 function BrandingFormInner({
   program,
-  mutate,
+  mutateProgram,
   draft,
   setDraft,
 }: {
   program: ProgramWithLanderDataProps;
-  mutate: KeyedMutator<ProgramWithLanderDataProps>;
+  mutateProgram: KeyedMutator<ProgramWithLanderDataProps>;
   draft: BrandingFormData | null;
   setDraft: (draft: BrandingFormData | null) => void;
 }) {
@@ -122,18 +130,30 @@ function BrandingFormInner({
     handleSubmit,
     reset,
     setError,
-    formState: { isDirty, isSubmitting },
+    formState: { isDirty, isSubmitting, isSubmitSuccessful },
+    getValues,
   } = form;
 
-  const { executeAsync } = useAction(updateProgramAction, {
-    async onSuccess() {
+  const { executeAsync, isPending } = useAction(updateProgramAction, {
+    async onSuccess({ data }) {
+      await mutateProgram();
       toast.success("Program updated successfully.");
-      mutate();
+
+      const currentValues = getValues();
+
+      if (data?.program.landerData) {
+        // Reset to persisted (in case anything changed)
+        reset({
+          ...currentValues,
+          landerData: data?.program.landerData,
+        });
+      } else {
+        // Still reset form state to clear isSubmitSuccessful
+        reset(currentValues);
+      }
     },
     onError({ error }) {
       console.error(error);
-      setError("root", { message: "Failed to update program." });
-      toast.error("Failed to update program.");
     },
   });
 
@@ -148,16 +168,31 @@ function BrandingFormInner({
 
   const [isTabPopoverOpen, setIsTabPopoverOpen] = useState(false);
 
+  const { isGeneratingLander } = useBrandingContext();
+
+  // Disable publish button when:
+  // - the lander is being generated with AI
+  // OR:
+  //   - there are no changes
+  //   - the program lander is already published
+  const disablePublishButton =
+    isGeneratingLander || (!isDirty && program.landerPublishedAt)
+      ? true
+      : false;
+
   return (
     <form
       onSubmit={handleSubmit(async (data) => {
-        await executeAsync({
+        const result = await executeAsync({
           workspaceId: workspaceId!,
           ...data,
         });
 
-        // Reset isDirty state
-        reset(data);
+        if (!result?.data?.success) {
+          toast.error("Failed to update program.");
+          setError("root", { message: "Failed to update program." });
+          return;
+        }
       })}
       className="overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100"
     >
@@ -229,8 +264,8 @@ function BrandingFormInner({
               type="submit"
               variant="primary"
               text="Publish"
-              loading={isSubmitting}
-              disabled={!isDirty}
+              loading={isPending || isSubmitting || isSubmitSuccessful}
+              disabled={disablePublishButton}
               className="h-8 w-fit px-3"
             />
           </div>

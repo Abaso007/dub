@@ -1,10 +1,10 @@
 import { handleAndReturnErrorResponse } from "@/lib/api/errors";
 import { limiter } from "@/lib/cron/limiter";
 import { verifyVercelSignature } from "@/lib/cron/verify-vercel";
-import { DUB_MIN_PAYOUT_AMOUNT_CENTS } from "@/lib/partners/constants";
 import { sendEmail } from "@dub/email";
 import ProgramPayoutReminder from "@dub/email/templates/program-payout-reminder";
 import { prisma } from "@dub/prisma";
+import { pluralize } from "@dub/utils";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +30,7 @@ export async function GET(req: Request) {
     const programsWithCustomMinPayouts = await prisma.program.findMany({
       where: {
         minPayoutAmount: {
-          gt: DUB_MIN_PAYOUT_AMOUNT_CENTS,
+          gt: 0,
         },
       },
     });
@@ -40,7 +40,7 @@ export async function GET(req: Request) {
       where: {
         status: "pending",
         amount: {
-          gte: DUB_MIN_PAYOUT_AMOUNT_CENTS,
+          gt: 0,
         },
         programId: {
           notIn: programsWithCustomMinPayouts.map((p) => p.id),
@@ -164,7 +164,6 @@ export async function GET(req: Request) {
             email: user.email,
           },
           program: {
-            id: program.id,
             name: program.name,
           },
           payout: {
@@ -182,7 +181,10 @@ export async function GET(req: Request) {
         ({ workspace, user, program, payout }) =>
           limiter.schedule(() =>
             sendEmail({
-              subject: `${payout.partnersCount} partners awaiting your payout for ${program.name}`,
+              subject: `${payout.partnersCount} ${pluralize(
+                "partner",
+                payout.partnersCount,
+              )} awaiting your payout for ${program.name}`,
               email: user.email!,
               react: ProgramPayoutReminder({
                 email: user.email!,

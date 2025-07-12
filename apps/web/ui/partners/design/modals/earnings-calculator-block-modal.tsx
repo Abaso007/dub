@@ -1,6 +1,8 @@
 "use client";
 
+import useDiscounts from "@/lib/swr/use-discounts";
 import useProgram from "@/lib/swr/use-program";
+import useRewards from "@/lib/swr/use-rewards";
 import useWorkspace from "@/lib/swr/use-workspace";
 import { programLanderEarningsCalculatorBlockSchema } from "@/lib/zod/schemas/program-lander";
 import { Button, Modal, useMediaQuery, useScrollProgress } from "@dub/ui";
@@ -44,7 +46,6 @@ function EarningsCalculatorBlockModalInner({
   const { isMobile } = useMediaQuery();
 
   const { slug: workspaceSlug } = useWorkspace();
-  const { program } = useProgram();
 
   const {
     handleSubmit,
@@ -129,7 +130,7 @@ function EarningsCalculatorBlockModalInner({
                     <p className="text-xs text-neutral-500">
                       This is calculated using your{" "}
                       <Link
-                        href={`/${workspaceSlug}/programs/${program!.id}/settings/rewards`}
+                        href={`/${workspaceSlug}/program/settings/rewards`}
                         target="_blank"
                         className="underline hover:text-neutral-600"
                       >
@@ -177,9 +178,17 @@ function Preview({
 
   const { program } = useProgram();
   const { control: brandingFormControl } = useBrandingFormContext();
+
   const brandColor = useWatch({
     control: brandingFormControl,
     name: "brandColor",
+  });
+
+  const { rewards } = useRewards();
+  const { discounts } = useDiscounts();
+  const landerData = useWatch({
+    control: brandingFormControl,
+    name: "landerData",
   });
 
   if (!program) return null;
@@ -194,7 +203,7 @@ function Preview({
             Math.min(Math.max(productPrice || 0, 0), MAX_PRODUCT_PRICE) * 100,
         },
       }}
-      program={{ ...program, brandColor }}
+      program={{ ...program, brandColor, rewards, discounts, landerData }}
       showTitleAndDescription={false}
     />
   );

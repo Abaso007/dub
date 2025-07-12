@@ -16,7 +16,7 @@ import {
 import { ReactNode } from "react";
 import { Footer } from "../components/footer";
 
-export function PartnerApplicationApproved({
+export default function PartnerApplicationApproved({
   program = {
     name: "Acme",
     logo: DUB_WORDMARK,
@@ -115,9 +115,20 @@ export function PartnerApplicationApproved({
               in real-time.
             </Text>
 
+            <Text className="ml-1 text-sm leading-5 text-black">
+              4. Learn how to{" "}
+              <Link
+                href="https://dub.co/help/article/navigating-partner-program"
+                className="font-semibold text-black underline"
+              >
+                navigate the program dashboard
+              </Link>{" "}
+              and get the most out of your program.
+            </Text>
+
             {!partner.payoutsEnabled && (
               <Text className="ml-1 text-sm leading-5 text-black">
-                4. Connect your Stripe account to{" "}
+                5. Connect your Stripe account to{" "}
                 <Link
                   href="https://dub.co/help/article/receiving-payouts"
                   className="font-semibold text-black underline"
@@ -165,5 +176,3 @@ export function PartnerApplicationApproved({
     </Html>
   );
 }
-
-export default PartnerApplicationApproved;

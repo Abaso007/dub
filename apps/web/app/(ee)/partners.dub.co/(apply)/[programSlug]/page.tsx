@@ -1,4 +1,5 @@
 import { getProgram } from "@/lib/fetchers/get-program";
+import { getProgramApplicationRewardsAndDiscount } from "@/lib/partners/get-program-application-rewards";
 import { programLanderSchema } from "@/lib/zod/schemas/program-lander";
 import { BLOCK_COMPONENTS } from "@/ui/partners/lander/blocks";
 import { LanderHero } from "@/ui/partners/lander/lander-hero";
@@ -15,14 +16,17 @@ export default async function ApplyPage({
 }) {
   const program = await getProgram({
     slug: programSlug,
-    include: ["rewards", "defaultDiscount"],
+    include: ["allRewards", "allDiscounts"],
   });
 
-  if (!program || !program.landerData || !program.defaultRewardId) {
+  if (!program || !program.landerData || !program.landerPublishedAt) {
     notFound();
   }
 
   const landerData = programLanderSchema.parse(program.landerData);
+
+  const { rewards, discount } =
+    getProgramApplicationRewardsAndDiscount(program);
 
   return (
     <div
@@ -39,7 +43,7 @@ export default async function ApplyPage({
         <LanderHero program={program} landerData={landerData} />
 
         {/* Program details grid */}
-        <LanderRewards program={program} />
+        <LanderRewards className="mt-4" rewards={rewards} discount={discount} />
 
         {/* Buttons */}
         <div className="animate-scale-in-fade mt-10 flex flex-col gap-2 [animation-delay:400ms] [animation-fill-mode:both]">

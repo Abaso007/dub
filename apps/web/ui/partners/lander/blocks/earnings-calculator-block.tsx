@@ -1,6 +1,7 @@
 "use client";
 
-import { ProgramProps } from "@/lib/types";
+import { getProgramApplicationRewardsAndDiscount } from "@/lib/partners/get-program-application-rewards";
+import { ProgramWithLanderDataProps } from "@/lib/types";
 import { programLanderEarningsCalculatorBlockSchema } from "@/lib/zod/schemas/program-lander";
 import { InvoiceDollar } from "@dub/ui";
 import NumberFlow from "@number-flow/react";
@@ -16,19 +17,25 @@ export function EarningsCalculatorBlock({
   showTitleAndDescription = true,
 }: {
   block: z.infer<typeof programLanderEarningsCalculatorBlockSchema>;
-  program: ProgramProps;
+  program: ProgramWithLanderDataProps;
   showTitleAndDescription?: boolean;
 }) {
   const id = useId();
-
-  const reward = program?.rewards?.find(
-    (r) => r.id === program?.defaultRewardId,
-  );
-
   const [value, setValue] = useState(10);
+
+  const { rewards } = getProgramApplicationRewardsAndDiscount({
+    rewards: program.rewards ?? [],
+    discounts: program.discounts ?? [],
+    landerData: program.landerData ?? {},
+  });
+
+  if (!rewards.length) return null;
+
+  const reward = rewards[0];
+  const rewardAmount = reward.amount ?? 0;
   const revenue = value * ((block.data.productPrice || 30_00) / 100);
 
-  return reward && reward.event === "sale" ? (
+  return (
     <div className="space-y-5">
       {showTitleAndDescription && (
         <div className="space-y-2">
@@ -80,8 +87,8 @@ export function EarningsCalculatorBlock({
             <NumberFlow
               value={Math.floor(
                 reward.type === "flat"
-                  ? reward.amount / 100
-                  : revenue * (reward.amount / 100),
+                  ? (value * rewardAmount) / 100
+                  : revenue * (rewardAmount / 100),
               )}
               className="text-4xl font-medium text-neutral-800"
               prefix="$"
@@ -91,5 +98,5 @@ export function EarningsCalculatorBlock({
         </div>
       </div>
     </div>
-  ) : null;
+  );
 }
